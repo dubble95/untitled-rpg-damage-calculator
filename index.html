@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>제목 없는 RPG 게임 무기 데미지 계산기</title>
+<style>
+  :root {
+    --bg: #0b1220;
+    --panel: #131b2b;
+    --panel-hover: #1b263b;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --accent: #22d3ee;
+    --gold: #fbbf24;
+    --danger: #ef4444;
+    --border: #25324a;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    line-height: 1.5;
+  }
+
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 24px 16px 48px;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 1.35rem;
+    letter-spacing: -0.02em;
+    word-break: keep-all;
+  }
+
+  @media (max-width: 480px) {
+    header { gap: 8px; }
+    h1 { font-size: 1.15rem; }
+  }
+
+  .subtitle {
+    margin: 4px 0 16px;
+    color: var(--muted);
+    font-size: 0.92rem;
+  }
+
+  .formula {
+    margin-bottom: 16px;
+    padding: 12px 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+
+  .formula b { color: var(--accent); }
+
+  .weapon-tabs {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    scrollbar-width: none;
+  }
+
+  .weapon-tabs::-webkit-scrollbar { display: none; }
+
+  .weapon-tab {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--panel);
+    color: var(--muted);
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: transform 0.1s, box-shadow 0.1s, border-color 0.1s, color 0.1s;
+    user-select: none;
+    white-space: nowrap;
+  }
+
+  .weapon-tab:active { transform: scale(0.96); }
+  .weapon-tab:hover { border-color: #334155; color: var(--text); }
+
+  .weapon-tab.selected {
+    border-color: var(--gold);
+    background: rgba(251, 191, 36, 0.12);
+    color: var(--gold);
+    box-shadow: 0 0 0 1px var(--gold);
+  }
+
+  .weapon-tab .alias {
+    font-size: 0.75rem;
+    opacity: 0.75;
+  }
+
+  .weapon-tab .base {
+    margin-left: auto;
+    font-size: 0.78rem;
+    opacity: 0.7;
+  }
+
+  .controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px;
+    margin-bottom: 16px;
+  }
+
+  @media (max-width: 480px) {
+    .controls { grid-template-columns: 1fr; }
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .field label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  .field label .value {
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .input-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  input[type="number"] {
+    width: 96px;
+    background: #0b1220;
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 6px 8px;
+    font-size: 1rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  input[type="number"]:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.15);
+  }
+
+  input[type="range"] {
+    flex: 1;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--border);
+    outline: none;
+    -webkit-appearance: none;
+    accent-color: var(--accent);
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    background: var(--accent);
+    border-radius: 50%;
+    cursor: pointer;
+  }
+
+  .result {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+
+  .result .name {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .result .alias {
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .damage {
+    font-size: 2.5rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--gold);
+  }
+
+  .damage .unit {
+    font-size: 1rem;
+    font-weight: 600;
+    opacity: 0.85;
+  }
+
+  .damage-range {
+    margin-top: 8px;
+    font-size: 1.05rem;
+    color: var(--muted);
+  }
+
+  .damage-range b { color: var(--text); }
+
+  .hint {
+    margin-top: 10px;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+
+  .compare {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    overflow-x: auto;
+  }
+
+  .compare h2 {
+    margin: 0 0 12px;
+    font-size: 1rem;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  table {
+    width: 100%;
+    min-width: 560px;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+
+  th, td {
+    text-align: left;
+    padding: 8px 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  th { color: var(--muted); font-weight: 600; white-space: nowrap; }
+
+  td.name-cell { font-weight: 700; width: 44%; }
+  td.name-cell.selected { color: var(--gold); }
+  td.base-cell, td.final-cell { font-variant-numeric: tabular-nums; width: 18%; }
+  td.ratio-cell { width: 20%; }
+
+  .ratio {
+    height: 8px;
+    border-radius: 4px;
+    background: var(--border);
+    overflow: hidden;
+    margin-top: 4px;
+  }
+
+  .ratio-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--gold));
+  }
+
+  .selected-row td {
+    background: rgba(251, 191, 36, 0.08);
+    border-color: rgba(251, 191, 36, 0.35);
+  }
+
+  .copy {
+    margin-top: 10px;
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  .copy:hover { border-color: var(--accent); }
+
+  .source {
+    margin-top: 18px;
+    font-size: 0.82rem;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+  }
+
+  .source a { color: var(--accent); text-decoration: none; }
+  .source a:hover { text-decoration: underline; }
+
+  .announce {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    border: 0;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <span aria-hidden="true">🗡️</span>
+    <h1>제목 없는 RPG 게임 무기 데미지 계산기</h1>
+  </header>
+
+  <p class="subtitle">
+    고낙·심파·심빛·심끝·망집의 강화 수치와 품질을 입력하면 최소~최대 데미지를 바로 계산합니다.
+    같은 강화·품질 조건에서 다섯 무기 결과를 한눈에 비교할 수 있습니다.
+  </p>
+
+  <div class="formula">
+    계산 수식:
+    <b>D = P × (200 + Q) × 1.07^R ÷ 300</b><br>
+    P = 0강 100품 기준 최대 기본 공격력, Q = 품질, R = 강화 수치.<br>
+    최소 데미지는 P의 절반을 같은 비율로 적용합니다. 스킬·유물 등 외부 보정은 포함하지 않습니다.
+  </div>
+
+  <div class="weapon-tabs" role="radiogroup" aria-label="계산할 무기">
+    <button type="button" class="weapon-tab selected" data-weapon="고낙" aria-checked="true">
+      <span>고낙</span>
+      <span class="alias">고대 낚싯대</span>
+      <span class="base">0강100품 최대 630</span>
+    </button>
+    <button type="button" class="weapon-tab" data-weapon="심파" aria-checked="false">
+      <span>심파</span>
+      <span class="alias">심연의 파동</span>
+      <span class="base">0강100품 최대 690</span>
+    </button>
+    <button type="button" class="weapon-tab" data-weapon="심빛" aria-checked="false">
+      <span>심빛</span>
+      <span class="alias">심연 속의 빛</span>
+      <span class="base">0강100품 최대 760</span>
+    </button>
+    <button type="button" class="weapon-tab" data-weapon="심끝" aria-checked="false">
+      <span>심끝</span>
+      <span class="alias">심연의 끝</span>
+      <span class="base">0강100품 최대 880</span>
+    </button>
+    <button type="button" class="weapon-tab" data-weapon="망집" aria-checked="false">
+      <span>망집</span>
+      <span class="alias">망각의 집행자</span>
+      <span class="base">0강100품 최대 1100</span>
+    </button>
+  </div>
+
+  <div class="controls">
+    <div class="field">
+      <label>
+        강화 <span class="value" id="strengthLabel">0</span>강
+      </label>
+      <div class="input-row">
+        <input type="number" id="strengthInput" min="0" max="999" value="0">
+        <input type="range" id="strengthSlider" min="0" max="999" value="0">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>
+        품질 <span class="value" id="qualityLabel">100</span>품
+      </label>
+      <div class="input-row">
+        <input type="number" id="qualityInput" min="1" max="100" value="100">
+        <input type="range" id="qualitySlider" min="1" max="100" value="100">
+      </div>
+    </div>
+  </div>
+
+  <div class="result" aria-live="polite" aria-atomic="true">
+    <div class="name" id="resultName">고대 낚싯대</div>
+    <div class="alias" id="resultAlias">고낙</div>
+    <div class="damage" id="resultDamage">
+      <span id="resultDamageMax">630</span>
+      <span class="unit">데미지</span>
+    </div>
+    <div class="damage-range" id="resultRange">최소 315 ~ 최대 630</div>
+    <div class="hint" id="resultHint">0강 · 100품 · 위키 기본 공격력과 동일</div>
+    <button type="button" class="copy" id="copyButton" aria-label="결과 복사">결과 복사</button>
+  </div>
+
+  <div class="compare">
+    <h2>
+      같은 조건 비교
+      <span id="compareCondition">0강 · 100품</span>
+    </h2>
+    <table>
+      <thead>
+        <tr>
+          <th>무기</th>
+          <th>기본 최대</th>
+          <th>최종 최대</th>
+          <th>상대 데미지</th>
+        </tr>
+      </thead>
+      <tbody id="compareBody"></tbody>
+    </table>
+  </div>
+
+  <div class="source">
+    출처: <a href="https://namu.wiki/w/%EC%A0%9C%EB%AA%A9%20%EC%97%86%EB%8A%94%20RPG%20%EA%B2%8C%EC%9E%84/%EB%AC%B4%EA%B8%B0" target="_blank" rel="noopener noreferrer">나무위키 제목 없는 RPG 게임/무기</a> ·
+    확인일 2026-11-19. 실제 게임 수치와 차이가 있을 수 있으므로 최종 데미지는 게임 내 툴팁을 확인하세요.
+  </div>
+</div>
+
+<div class="announce" id="announce"></div>
+
+<script>
+(function () {
+  const WEAPONS = [
+    { id: "고낙", name: "고대 낚싯대", alias: "고낙", min: 315, max: 630 },
+    { id: "심파", name: "심연의 파동", alias: "심파", min: 345, max: 690 },
+    { id: "심빛", name: "심연 속의 빛", alias: "심빛", min: 380, max: 760 },
+    { id: "심끝", name: "심연의 끝", alias: "심끝", min: 440, max: 880 },
+    { id: "망집", name: "망각의 집행자", alias: "망집", min: 550, max: 1100 }
+  ];
+
+  const tabs = document.querySelectorAll(".weapon-tab");
+  const strengthInput = document.getElementById("strengthInput");
+  const strengthSlider = document.getElementById("strengthSlider");
+  const strengthLabel = document.getElementById("strengthLabel");
+  const qualityInput = document.getElementById("qualityInput");
+  const qualitySlider = document.getElementById("qualitySlider");
+  const qualityLabel = document.getElementById("qualityLabel");
+  const resultName = document.getElementById("resultName");
+  const resultAlias = document.getElementById("resultAlias");
+  const resultDamageMax = document.getElementById("resultDamageMax");
+  const resultRange = document.getElementById("resultRange");
+  const resultHint = document.getElementById("resultHint");
+  const compareCondition = document.getElementById("compareCondition");
+  const compareBody = document.getElementById("compareBody");
+  const copyButton = document.getElementById("copyButton");
+  const announce = document.getElementById("announce");
+
+  let state = {
+    weaponId: "고낙",
+    strength: 0,
+    quality: 100
+  };
+
+  function clamp(value, min, max) {
+    return Math.min(Math.max(value, min), max);
+  }
+
+  function formatNumber(value) {
+    return value.toLocaleString("ko-KR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function calculate(weapon, strength, quality) {
+    const qualityFactor = (200 + quality) / 300;
+    const enhanceFactor = Math.pow(1.07, strength);
+    const min = weapon.min * qualityFactor * enhanceFactor;
+    const max = weapon.max * qualityFactor * enhanceFactor;
+    return { min, max };
+  }
+
+  function syncUrl() {
+    const params = new URLSearchParams(window.location.search);
+    params.set("weapon", state.weaponId);
+    params.set("r", String(state.strength));
+    params.set("q", String(state.quality));
+    history.replaceState(null, "", "?" + params.toString());
+  }
+
+  function render() {
+    const weapon = WEAPONS.find(w => w.id === state.weaponId) || WEAPONS[0];
+    const { min, max } = calculate(weapon, state.strength, state.quality);
+    const nextMax = calculate(weapon, state.strength + 1, state.quality).max;
+    const nextQualityMax = calculate(weapon, state.strength, Math.min(state.quality + 1, 100)).max;
+
+    tabs.forEach(tab => {
+      const selected = tab.dataset.weapon === state.weaponId;
+      tab.classList.toggle("selected", selected);
+      tab.setAttribute("aria-checked", String(selected));
+    });
+
+    strengthInput.value = state.strength;
+    strengthSlider.value = state.strength;
+    strengthLabel.textContent = state.strength;
+    qualityInput.value = state.quality;
+    qualitySlider.value = state.quality;
+    qualityLabel.textContent = state.quality;
+
+    resultName.textContent = weapon.name;
+    resultAlias.textContent = weapon.alias;
+    resultDamageMax.textContent = formatNumber(max);
+    resultRange.textContent = `최소 ${formatNumber(min)} ~ 최대 ${formatNumber(max)}`;
+
+    const enhancePercent = ((Math.pow(1.07, 1) - 1) * 100).toFixed(1);
+    const qualityPercent = ((1 / (200 + state.quality)) * 100).toFixed(2);
+    resultHint.textContent =
+      `${state.strength}강 · ${state.quality}품 · ` +
+      `1강 올리면 최대 +${enhancePercent}%, 1품 올리면 최대 +${qualityPercent}%`;
+
+    compareCondition.textContent = `${state.strength}강 · ${state.quality}품`;
+    const bestMax = Math.max(...WEAPONS.map(w => calculate(w, state.strength, state.quality).max));
+
+    compareBody.innerHTML = "";
+    for (const w of WEAPONS) {
+      const cur = calculate(w, state.strength, state.quality);
+      const row = document.createElement("tr");
+      if (w.id === state.weaponId) row.classList.add("selected-row");
+
+      const ratio = bestMax > 0 ? (cur.max / bestMax) * 100 : 0;
+
+      row.innerHTML = `
+        <td class="name-cell ${w.id === state.weaponId ? "selected" : ""}">
+          <span>${w.name}</span>
+          <span style="font-size:0.78rem;opacity:0.7;margin-left:6px;">${w.alias}</span>
+        </td>
+        <td class="base-cell">${formatNumber(w.max)}</td>
+        <td class="final-cell"><b>${formatNumber(cur.max)}</b></td>
+        <td class="ratio-cell">
+          <div style="font-size:0.82rem;color:var(--muted);">${ratio.toFixed(0)}%</div>
+          <div class="ratio"><div class="ratio-fill" style="width:${ratio}%"></div></div>
+        </td>
+      `;
+      compareBody.appendChild(row);
+    }
+
+    announce.textContent =
+      `${weapon.name} ${state.strength}강 ${state.quality}품, 최대 데미지 ${formatNumber(max)}, 최소 ${formatNumber(min)}`;
+  }
+
+  function setWeapon(id) {
+    state.weaponId = id;
+    syncUrl();
+    render();
+  }
+
+  function setStrength(value) {
+    if (value === "" || !Number.isFinite(Number(value))) return;
+    state.strength = clamp(Math.round(Number(value)), 0, 999);
+    syncUrl();
+    render();
+  }
+
+  function setQuality(value) {
+    if (value === "" || !Number.isFinite(Number(value))) return;
+    state.quality = clamp(Math.round(Number(value)), 1, 100);
+    syncUrl();
+    render();
+  }
+
+  tabs.forEach(tab => {
+    tab.addEventListener("click", () => setWeapon(tab.dataset.weapon));
+    tab.addEventListener("keydown", event => {
+      if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
+        event.preventDefault();
+        const index = Array.from(tabs).indexOf(tab);
+        const next = (index + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+        tabs[next].focus();
+        setWeapon(tabs[next].dataset.weapon);
+      }
+    });
+  });
+
+  strengthInput.addEventListener("input", () => setStrength(strengthInput.value));
+  strengthSlider.addEventListener("input", () => setStrength(strengthSlider.value));
+  qualityInput.addEventListener("input", () => setQuality(qualityInput.value));
+  qualitySlider.addEventListener("input", () => setQuality(qualitySlider.value));
+
+  copyButton.addEventListener("click", async () => {
+    const weapon = WEAPONS.find(w => w.id === state.weaponId);
+    const { min, max } = calculate(weapon, state.strength, state.quality);
+    const text =
+      `${weapon.name}(${weapon.alias}) ${state.strength}강 ${state.quality}품:\n` +
+      `최소 ${formatNumber(min)} ~ 최대 ${formatNumber(max)} 데미지`;
+    const original = copyButton.textContent;
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        const copied = document.execCommand("copy");
+        textarea.remove();
+        if (!copied) throw new Error("copy failed");
+      }
+      copyButton.textContent = "복사됨";
+    } catch {
+      copyButton.textContent = "복사 실패";
+    }
+    setTimeout(() => { copyButton.textContent = original; }, 1200);
+  });
+
+  function initFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const weapon = params.get("weapon");
+    if (WEAPONS.some(w => w.id === weapon)) state.weaponId = weapon;
+
+    if (params.has("r")) {
+      const strength = Number(params.get("r"));
+      if (Number.isFinite(strength)) state.strength = clamp(Math.round(strength), 0, 999);
+    }
+
+    if (params.has("q")) {
+      const quality = Number(params.get("q"));
+      if (Number.isFinite(quality)) state.quality = clamp(Math.round(quality), 1, 100);
+    }
+  }
+
+  initFromUrl();
+  render();
+})();
+</script>
+</body>
+</html>
