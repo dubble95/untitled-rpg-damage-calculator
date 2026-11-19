@@ -71,35 +71,34 @@
   .formula b { color: var(--accent); }
 
   .weapon-tabs {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 8px;
-    overflow-x: auto;
     margin-bottom: 16px;
-    padding-bottom: 8px;
-    scrollbar-width: none;
   }
 
-  .weapon-tabs::-webkit-scrollbar { display: none; }
-
   .weapon-tab {
-    flex: 0 0 auto;
+    min-width: 0;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 8px;
-    padding: 10px 14px;
+    justify-content: center;
+    gap: 3px;
+    padding: 10px 4px;
     border: 1px solid var(--border);
-    border-radius: 999px;
+    border-radius: 12px;
     background: var(--panel);
     color: var(--muted);
     font-size: 0.88rem;
+    line-height: 1.35;
+    text-align: center;
     cursor: pointer;
     transition: transform 0.1s, box-shadow 0.1s, border-color 0.1s, color 0.1s;
     user-select: none;
-    white-space: nowrap;
   }
 
   .weapon-tab:active { transform: scale(0.96); }
-  .weapon-tab:hover { border-color: #334155; color: var(--text); }
+  .weapon-tab:hover { border-color: #334155; color: var(--text); background: var(--panel-hover); }
 
   .weapon-tab.selected {
     border-color: var(--gold);
@@ -108,15 +107,49 @@
     box-shadow: 0 0 0 1px var(--gold);
   }
 
+  .weapon-tab .icon {
+    font-size: 1.35rem;
+    line-height: 1.2;
+  }
+
+  .weapon-tab .name {
+    color: var(--text);
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+
+  .weapon-tab.selected .name { color: var(--gold); }
+
   .weapon-tab .alias {
-    font-size: 0.75rem;
-    opacity: 0.75;
+    font-size: 0.72rem;
+    line-height: 1.35;
+    opacity: 0.85;
+    word-break: keep-all;
   }
 
   .weapon-tab .base {
-    margin-left: auto;
+    margin-top: 3px;
+    font-size: 0.68rem;
+    line-height: 1.35;
+    font-variant-numeric: tabular-nums;
+    opacity: 0.75;
+  }
+
+  .weapon-tab .base b {
+    color: var(--text);
     font-size: 0.78rem;
-    opacity: 0.7;
+  }
+
+  .weapon-tab.selected .base b { color: var(--gold); }
+
+  @media (max-width: 480px) {
+    .weapon-tabs { gap: 5px; }
+    .weapon-tab { padding: 8px 2px; border-radius: 9px; }
+    .weapon-tab .icon { font-size: 1.15rem; }
+    .weapon-tab .name { font-size: 0.8rem; }
+    .weapon-tab .alias { font-size: 0.65rem; }
+    .weapon-tab .base { font-size: 0.6rem; }
+    .weapon-tab .base b { font-size: 0.7rem; }
   }
 
   .controls {
@@ -354,30 +387,35 @@
   </div>
 
   <div class="weapon-tabs" role="radiogroup" aria-label="계산할 무기">
-    <button type="button" class="weapon-tab selected" data-weapon="고낙" aria-checked="true">
-      <span>고낙</span>
-      <span class="alias">고대 낚싯대</span>
-      <span class="base">0강100품 최대 630</span>
-    </button>
-    <button type="button" class="weapon-tab" data-weapon="심파" aria-checked="false">
-      <span>심파</span>
-      <span class="alias">심연의 파동</span>
-      <span class="base">0강100품 최대 690</span>
-    </button>
-    <button type="button" class="weapon-tab" data-weapon="심빛" aria-checked="false">
-      <span>심빛</span>
-      <span class="alias">심연 속의 빛</span>
-      <span class="base">0강100품 최대 760</span>
+    <button type="button" class="weapon-tab" data-weapon="망집" aria-checked="false">
+      <span class="icon" aria-hidden="true">⚔️</span>
+      <span class="name">망집</span>
+      <span class="alias">망각의<br>집행자</span>
+      <span class="base">기본 최대<br><b>1,100</b></span>
     </button>
     <button type="button" class="weapon-tab" data-weapon="심끝" aria-checked="false">
-      <span>심끝</span>
-      <span class="alias">심연의 끝</span>
-      <span class="base">0강100품 최대 880</span>
+      <span class="icon" aria-hidden="true">🌌</span>
+      <span class="name">심끝</span>
+      <span class="alias">심연의<br>끝</span>
+      <span class="base">기본 최대<br><b>880</b></span>
     </button>
-    <button type="button" class="weapon-tab" data-weapon="망집" aria-checked="false">
-      <span>망집</span>
-      <span class="alias">망각의 집행자</span>
-      <span class="base">0강100품 최대 1100</span>
+    <button type="button" class="weapon-tab" data-weapon="심빛" aria-checked="false">
+      <span class="icon" aria-hidden="true">✨</span>
+      <span class="name">심빛</span>
+      <span class="alias">심연 속의<br>빛</span>
+      <span class="base">기본 최대<br><b>760</b></span>
+    </button>
+    <button type="button" class="weapon-tab" data-weapon="심파" aria-checked="false">
+      <span class="icon" aria-hidden="true">🌊</span>
+      <span class="name">심파</span>
+      <span class="alias">심연의<br>파동</span>
+      <span class="base">기본 최대<br><b>690</b></span>
+    </button>
+    <button type="button" class="weapon-tab selected" data-weapon="고낙" aria-checked="true">
+      <span class="icon" aria-hidden="true">🎣</span>
+      <span class="name">고낙</span>
+      <span class="alias">고대<br>낚싯대</span>
+      <span class="base">기본 최대<br><b>630</b></span>
     </button>
   </div>
 
@@ -387,8 +425,8 @@
         강화 <span class="value" id="strengthLabel">0</span>강
       </label>
       <div class="input-row">
-        <input type="number" id="strengthInput" min="0" max="999" value="0">
-        <input type="range" id="strengthSlider" min="0" max="999" value="0">
+        <input type="number" id="strengthInput" min="0" max="70" value="0">
+        <input type="range" id="strengthSlider" min="0" max="70" value="0">
       </div>
     </div>
 
@@ -478,8 +516,18 @@
     return Math.min(Math.max(value, min), max);
   }
 
-  function formatNumber(value) {
-    return value.toLocaleString("ko-KR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  function formatDamage(value) {
+    const units = [
+      { threshold: 1e12, suffix: "t" },
+      { threshold: 1e9, suffix: "b" },
+      { threshold: 1e6, suffix: "m" },
+      { threshold: 1e3, suffix: "k" }
+    ];
+    const unit = units.find(unit => Math.abs(value) >= unit.threshold);
+    if (!unit) return Math.round(value).toLocaleString("ko-KR");
+
+    const compact = (value / unit.threshold).toFixed(2).replace(/\.?0+$/, "");
+    return compact + unit.suffix;
   }
 
   function calculate(weapon, strength, quality) {
@@ -519,8 +567,8 @@
 
     resultName.textContent = weapon.name;
     resultAlias.textContent = weapon.alias;
-    resultDamageMax.textContent = formatNumber(max);
-    resultRange.textContent = `최소 ${formatNumber(min)} ~ 최대 ${formatNumber(max)}`;
+    resultDamageMax.textContent = formatDamage(max);
+    resultRange.textContent = `최소 ${formatDamage(min)} ~ 최대 ${formatDamage(max)}`;
 
     const enhancePercent = ((Math.pow(1.07, 1) - 1) * 100).toFixed(1);
     const qualityPercent = ((1 / (200 + state.quality)) * 100).toFixed(2);
@@ -544,8 +592,8 @@
           <span>${w.name}</span>
           <span style="font-size:0.78rem;opacity:0.7;margin-left:6px;">${w.alias}</span>
         </td>
-        <td class="base-cell">${formatNumber(w.max)}</td>
-        <td class="final-cell"><b>${formatNumber(cur.max)}</b></td>
+        <td class="base-cell">${formatDamage(w.max)}</td>
+        <td class="final-cell"><b>${formatDamage(cur.max)}</b></td>
         <td class="ratio-cell">
           <div style="font-size:0.82rem;color:var(--muted);">${ratio.toFixed(0)}%</div>
           <div class="ratio"><div class="ratio-fill" style="width:${ratio}%"></div></div>
@@ -555,7 +603,7 @@
     }
 
     announce.textContent =
-      `${weapon.name} ${state.strength}강 ${state.quality}품, 최대 데미지 ${formatNumber(max)}, 최소 ${formatNumber(min)}`;
+      `${weapon.name} ${state.strength}강 ${state.quality}품, 최대 데미지 ${formatDamage(max)}, 최소 ${formatDamage(min)}`;
   }
 
   function setWeapon(id) {
@@ -566,7 +614,7 @@
 
   function setStrength(value) {
     if (value === "" || !Number.isFinite(Number(value))) return;
-    state.strength = clamp(Math.round(Number(value)), 0, 999);
+    state.strength = clamp(Math.round(Number(value)), 0, 70);
     syncUrl();
     render();
   }
@@ -601,7 +649,7 @@
     const { min, max } = calculate(weapon, state.strength, state.quality);
     const text =
       `${weapon.name}(${weapon.alias}) ${state.strength}강 ${state.quality}품:\n` +
-      `최소 ${formatNumber(min)} ~ 최대 ${formatNumber(max)} 데미지`;
+      `최소 ${formatDamage(min)} ~ 최대 ${formatDamage(max)} 데미지`;
     const original = copyButton.textContent;
     try {
       if (navigator.clipboard && window.isSecureContext) {
@@ -631,7 +679,7 @@
 
     if (params.has("r")) {
       const strength = Number(params.get("r"));
-      if (Number.isFinite(strength)) state.strength = clamp(Math.round(strength), 0, 999);
+      if (Number.isFinite(strength)) state.strength = clamp(Math.round(strength), 0, 70);
     }
 
     if (params.has("q")) {
