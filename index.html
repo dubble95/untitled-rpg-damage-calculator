@@ -528,10 +528,10 @@
       { threshold: 1e12, suffix: "t" },
       { threshold: 1e9, suffix: "b" },
       { threshold: 1e6, suffix: "m" },
-      { threshold: 1e3, suffix: "k" }
+      { threshold: 1e4, suffix: "k" }
     ];
     const unit = units.find(unit => Math.abs(value) >= unit.threshold);
-    if (!unit) return Math.round(value).toLocaleString("ko-KR");
+    if (!unit) return (Math.round(value * 10) / 10).toFixed(1).replace(/\.0$/, "");
 
     const compact = (value / unit.threshold).toFixed(2).replace(/\.?0+$/, "");
     return compact + unit.suffix;
