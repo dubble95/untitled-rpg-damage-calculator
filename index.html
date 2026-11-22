@@ -391,7 +391,7 @@
       <span class="icon" aria-hidden="true">⚔️</span>
       <span class="name">망집</span>
       <span class="alias">망각의<br>집행자</span>
-      <span class="base">기본 최대<br><b>1,100</b></span>
+      <span class="base">기본 최대<br><b>1,110</b></span>
     </button>
     <button type="button" class="weapon-tab" data-weapon="심끝" aria-checked="false">
       <span class="icon" aria-hidden="true">🌌</span>
@@ -433,10 +433,11 @@
     <div class="field">
       <label>
         품질 <span class="value" id="qualityLabel">100</span>품
+        <small class="note">게임 내 표시값은 정수 반올림일 수 있음</small>
       </label>
       <div class="input-row">
-        <input type="number" id="qualityInput" min="1" max="100" value="100">
-        <input type="range" id="qualitySlider" min="1" max="100" value="100">
+        <input type="number" id="qualityInput" min="1" max="100" step="0.01" value="100">
+        <input type="range" id="qualitySlider" min="1" max="100" step="0.01" value="100">
       </div>
     </div>
   </div>
@@ -474,7 +475,12 @@
   <div class="source">
     출처: <a href="https://namu.wiki/w/%EC%A0%9C%EB%AA%A9%20%EC%97%86%EB%8A%94%20RPG%20%EA%B2%8C%EC%9E%84/%EB%AC%B4%EA%B8%B0" target="_blank" rel="noopener noreferrer">나무위키 제목 없는 RPG 게임/무기</a> ·
     <a href="https://namu.wiki/diff/%EC%A0%9C%EB%AA%A9%20%EC%97%86%EB%8A%94%20RPG%20%EA%B2%8C%EC%9E%84/%EB%AC%B4%EA%B8%B0?uuid=70c0abf4-2ec0-477b-9063-ef0ebc45469d" target="_blank" rel="noopener noreferrer">품질 공식 변경 기록</a> ·
-    확인일 2026-11-20. 실제 게임 수치와 차이가 있을 수 있으므로 최종 데미지는 게임 내 툴팁을 확인하세요.
+    확인일 2026-11-20.
+  </div>
+  <div class="error-note">
+    <strong>오차 참고:</strong> 공식 <i>P × (200 + Q) ÷ 300 × 1.07<sup>R</sup></i>은 게임 내 툴팁과 거의 일치합니다.<br>
+    검증 결과: 망각의 집행자 +57 99품 → 계산 52.33k vs 게임 52.32k (오차 0.02%), +0 4품 → 계산 754.8 vs 게임 754.8 (오차 0%).<br>
+    기본 공격력 값이 게임 업데이트로 변경된 경우 계산 결과와 차이가 날 수 있습니다. 품질 입력란에 소수점을 직접 입력하면 더 정확하게 맞출 수 있습니다.
   </div>
 </div>
 
@@ -487,7 +493,7 @@
     { id: "심파", name: "심연의 파동", alias: "심파", min: 345, max: 690 },
     { id: "심빛", name: "심연 속의 빛", alias: "심빛", min: 380, max: 760 },
     { id: "심끝", name: "심연의 끝", alias: "심끝", min: 440, max: 880 },
-    { id: "망집", name: "망각의 집행자", alias: "망집", min: 550, max: 1100 }
+    { id: "망집", name: "망각의 집행자", alias: "망집", min: 555, max: 1110 }
   ];
 
   const tabs = document.querySelectorAll(".weapon-tab");
