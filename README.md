@@ -83,6 +83,16 @@ https://dubble95.github.io/untitled-rpg-damage-calculator/?weapon=망집&r=12&q=
 
 위 예시는 망각의 집행자 12강 95품입니다.
 
+## 테스트
+
+Node.js 18 이상에서 별도 패키지 설치 없이 실행할 수 있습니다.
+
+```bash
+npm test
+```
+
+`index.html`의 실제 계산·표시 함수를 읽어 검증하며, 기본 공격력, 게임 화면 검증 사례, `k` 단위 경계, 100품 70강 망집의 `126.53k` 회귀 사례, `m·b·t` 단위를 검사합니다.
+
 ## 라이선스
 
 이 프로젝트는 [MIT License](LICENSE)로 제공됩니다. 저작권 및 라이선스 고지를 유지하는 조건으로 누구나 자유롭게 사용·수정·배포하고 상업적으로 이용할 수 있습니다. 소프트웨어는 **있는 그대로** 제공되며, 저작자는 사용으로 인해 발생하는 손해나 문제에 대해 책임지지 않습니다.
@@ -90,8 +100,10 @@ https://dubble95.github.io/untitled-rpg-damage-calculator/?weapon=망집&r=12&q=
 ## 프로젝트 구조
 
 ```text
-index.html    # 화면, 스타일, 계산 로직을 포함한 전체 애플리케이션
-README.md     # 사용 방법과 계산 기준
-CHANGELOG.md  # 커밋 기록 기반 변경 이력
-LICENSE       # MIT 라이선스 전문
+index.html                # 화면, 스타일, 계산 로직을 포함한 전체 애플리케이션
+tests/calculator.test.js  # 계산·표시 형식 회귀 테스트
+package.json              # npm test 실행 설정
+README.md                 # 사용 방법과 계산 기준
+CHANGELOG.md              # 커밋 기록 기반 변경 이력
+LICENSE                   # MIT 라이선스 전문
 ```

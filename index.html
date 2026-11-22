@@ -547,15 +547,15 @@
 
   function formatDamage(value) {
     const units = [
-      { threshold: 1e12, suffix: "t" },
-      { threshold: 1e9, suffix: "b" },
-      { threshold: 1e6, suffix: "m" },
-      { threshold: 1e4, suffix: "k" }
+      { threshold: 1e12, divisor: 1e12, suffix: "t" },
+      { threshold: 1e9, divisor: 1e9, suffix: "b" },
+      { threshold: 1e6, divisor: 1e6, suffix: "m" },
+      { threshold: 1e4, divisor: 1e3, suffix: "k" }
     ];
     const unit = units.find(unit => Math.abs(value) >= unit.threshold);
     if (!unit) return (Math.round(value * 10) / 10).toFixed(1).replace(/\.0$/, "");
 
-    const compact = (value / unit.threshold).toFixed(2).replace(/\.?0+$/, "");
+    const compact = (value / unit.divisor).toFixed(2).replace(/\.?0+$/, "");
     return compact + unit.suffix;
   }
 
@@ -650,7 +650,7 @@
 
   function setQuality(value) {
     if (value === "" || !Number.isFinite(Number(value))) return;
-    state.quality = clamp(Math.round(Number(value)), 1, 100);
+    state.quality = clamp(Math.round(Number(value) * 100) / 100, 1, 100);
     syncUrl();
     render();
   }
@@ -713,7 +713,7 @@
 
     if (params.has("q")) {
       const quality = Number(params.get("q"));
-      if (Number.isFinite(quality)) state.quality = clamp(Math.round(quality), 1, 100);
+      if (Number.isFinite(quality)) state.quality = clamp(Math.round(quality * 100) / 100, 1, 100);
     }
   }
 
