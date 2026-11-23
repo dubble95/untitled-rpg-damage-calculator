@@ -163,6 +163,83 @@
     margin-bottom: 16px;
   }
 
+  .enhance-cost {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px;
+    margin-bottom: 16px;
+  }
+
+  .enhance-cost h3 {
+    margin: 0 0 12px;
+    font-size: 1rem;
+    color: var(--muted);
+    grid-column: 1 / -1;
+  }
+
+  .enhance-cost .note {
+    grid-column: 1 / -1;
+    font-size: 0.8rem;
+    color: var(--danger);
+    margin: 0 0 10px;
+  }
+
+  .enhance-cost .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .enhance-cost .field label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  .enhance-cost .field label .value {
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .enhance-cost .field label input[type="checkbox"] {
+    margin: 0;
+    width: auto;
+  }
+
+  .enhance-cost .enhance-result {
+    grid-column: 1 / -1;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+
+  .enhance-cost .enhance-result div {
+    margin: 4px 0;
+  }
+
+  .enhance-cost .enhance-result strong {
+    color: var(--text);
+  }
+
+  .enhance-cost .enhance-result .cost {
+    color: var(--gold);
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media (max-width: 480px) {
+    .enhance-cost {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
   @media (max-width: 480px) {
     .controls { grid-template-columns: 1fr; }
   }
@@ -461,6 +538,43 @@
     </div>
   </div>
 
+  <div class="enhance-cost">
+    <h3>예상 강화 비용</h3>
+    <p class="note">공식 비용·확률표가 공개되지 않아 추정치입니다. 게임과 맞춰 입력값을 조정하세요.</p>
+    <div class="field">
+      <label>현재 강화 <span class="value" id="enhanceFromLabel">0</span>강</label>
+      <input type="number" id="enhanceFromInput" min="0" max="69" value="0">
+    </div>
+    <div class="field">
+      <label>목표 강화 <span class="value" id="enhanceToLabel">10</span>강</label>
+      <input type="number" id="enhanceToInput" min="1" max="70" value="10">
+    </div>
+    <div class="field">
+      <label>시도당 골드 비용 <span class="value" id="enhanceCostLabel">1000</span>G</label>
+      <input type="number" id="enhanceCostInput" min="0" value="1000">
+    </div>
+    <div class="field">
+      <label>기본 성공 확률 <span class="value" id="enhanceBaseRateLabel">90</span>%</label>
+      <input type="number" id="enhanceBaseRateInput" min="1" max="100" value="90">
+    </div>
+    <div class="field">
+      <label>천장(피티) 시도 횟수 <span class="value" id="enhancePityLabel">50</span>회</label>
+      <input type="number" id="enhancePityInput" min="1" value="50">
+    </div>
+    <div class="field">
+      <label style="justify-content: flex-start; gap: 8px;">
+        <input type="checkbox" id="enhanceProtectionCheckbox">
+        강화하락 방지권 사용 (실패 시 강화 수치 유지)
+      </label>
+    </div>
+    <div class="enhance-result">
+      <div><strong>예상 시도 횟수:</strong> <span id="enhanceExpectedAttempts" class="cost">0</span>회</div>
+      <div><strong>예상 골드 비용:</strong> <span id="enhanceExpectedCost" class="cost">0</span>G</div>
+      <div><strong>최대 시도 횟수 (천장):</strong> <span id="enhanceMaxAttempts" class="cost">0</span>회</div>
+      <div><strong>최대 골드 비용 (천장 돌파):</strong> <span id="enhanceMaxCost" class="cost">0</span>G</div>
+    </div>
+  </div>
+
   <div class="result" aria-live="polite" aria-atomic="true">
     <div class="name" id="resultName">고대 낚싯대</div>
     <div class="alias" id="resultAlias">고낚</div>
@@ -534,11 +648,32 @@
   const compareBody = document.getElementById("compareBody");
   const copyButton = document.getElementById("copyButton");
   const announce = document.getElementById("announce");
+  const enhanceFromInput = document.getElementById("enhanceFromInput");
+  const enhanceFromLabel = document.getElementById("enhanceFromLabel");
+  const enhanceToInput = document.getElementById("enhanceToInput");
+  const enhanceToLabel = document.getElementById("enhanceToLabel");
+  const enhanceCostInput = document.getElementById("enhanceCostInput");
+  const enhanceCostLabel = document.getElementById("enhanceCostLabel");
+  const enhanceBaseRateInput = document.getElementById("enhanceBaseRateInput");
+  const enhanceBaseRateLabel = document.getElementById("enhanceBaseRateLabel");
+  const enhancePityInput = document.getElementById("enhancePityInput");
+  const enhancePityLabel = document.getElementById("enhancePityLabel");
+  const enhanceProtectionCheckbox = document.getElementById("enhanceProtectionCheckbox");
+  const enhanceExpectedAttempts = document.getElementById("enhanceExpectedAttempts");
+  const enhanceExpectedCost = document.getElementById("enhanceExpectedCost");
+  const enhanceMaxAttempts = document.getElementById("enhanceMaxAttempts");
+  const enhanceMaxCost = document.getElementById("enhanceMaxCost");
 
   let state = {
     weaponId: "고낚",
     strength: 0,
-    quality: 100
+    quality: 100,
+    enhanceFrom: 0,
+    enhanceTo: 10,
+    enhanceCost: 1000,
+    enhanceBaseRate: 90,
+    enhancePity: 50,
+    enhanceProtection: false
   };
 
   function clamp(value, min, max) {
@@ -574,6 +709,35 @@
     };
   }
 
+  function calculateEnhanceCost(fromLevel, toLevel, costPerAttempt, baseRatePercent, pity, useProtection) {
+    let totalExpectedAttempts = 0;
+    let totalExpectedCost = 0;
+    let totalMaxAttempts = 0;
+    let totalMaxCost = 0;
+
+    for (let level = fromLevel; level < toLevel; level++) {
+      const p = Math.max(0.01, baseRatePercent / 100 - 0.14 * level);
+      const q = 1 - p;
+
+      // Expected attempts with pity ceiling: sum_{k=1}^{pity-1} k * q^(k-1) * p + pity * q^(pity-1)
+      // Simplified closed form: (1 - q^pity) / p
+      const expectedAttempts = (1 - Math.pow(q, pity)) / p;
+      const maxAttempts = pity;
+
+      totalExpectedAttempts += expectedAttempts;
+      totalExpectedCost += expectedAttempts * costPerAttempt;
+      totalMaxAttempts += maxAttempts;
+      totalMaxCost += maxAttempts * costPerAttempt;
+    }
+
+    return {
+      expectedAttempts: totalExpectedAttempts,
+      expectedCost: totalExpectedCost,
+      maxAttempts: totalMaxAttempts,
+      maxCost: totalMaxCost
+    };
+  }
+
   function syncUrl() {
     const params = new URLSearchParams(window.location.search);
     params.set("weapon", state.weaponId);
@@ -601,6 +765,18 @@
     qualityInput.value = state.quality;
     qualitySlider.value = state.quality;
     qualityLabel.textContent = state.quality;
+
+    enhanceFromInput.value = state.enhanceFrom;
+    enhanceFromLabel.textContent = state.enhanceFrom;
+    enhanceToInput.value = state.enhanceTo;
+    enhanceToLabel.textContent = state.enhanceTo;
+    enhanceCostInput.value = state.enhanceCost;
+    enhanceCostLabel.textContent = state.enhanceCost;
+    enhanceBaseRateInput.value = state.enhanceBaseRate;
+    enhanceBaseRateLabel.textContent = state.enhanceBaseRate;
+    enhancePityInput.value = state.enhancePity;
+    enhancePityLabel.textContent = state.enhancePity;
+    enhanceProtectionCheckbox.checked = state.enhanceProtection;
 
     resultName.textContent = weapon.name;
     resultAlias.textContent = weapon.alias;
@@ -641,6 +817,20 @@
 
     announce.textContent =
       `${weapon.name} ${state.strength}강 ${state.quality}품, 최대 데미지 ${formatDamage(max)}, 최소 ${formatDamage(min)}`;
+
+    const { expectedAttempts, expectedCost, maxAttempts, maxCost } = calculateEnhanceCost(
+      state.enhanceFrom,
+      state.enhanceTo,
+      state.enhanceCost,
+      state.enhanceBaseRate,
+      state.enhancePity,
+      state.enhanceProtection
+    );
+
+    enhanceExpectedAttempts.textContent = formatDamage(expectedAttempts);
+    enhanceExpectedCost.textContent = formatDamage(expectedCost);
+    enhanceMaxAttempts.textContent = formatDamage(maxAttempts);
+    enhanceMaxCost.textContent = formatDamage(maxCost);
   }
 
   function setWeapon(id) {
@@ -660,6 +850,41 @@
     if (value === "" || !Number.isFinite(Number(value))) return;
     state.quality = clamp(Math.round(Number(value) * 100) / 100, 1, 100);
     syncUrl();
+    render();
+  }
+
+  function setEnhanceFrom(value) {
+    if (value === "" || !Number.isFinite(Number(value))) return;
+    state.enhanceFrom = clamp(Math.round(Number(value)), 0, 69);
+    render();
+  }
+
+  function setEnhanceTo(value) {
+    if (value === "" || !Number.isFinite(Number(value))) return;
+    state.enhanceTo = clamp(Math.round(Number(value)), 1, 70);
+    render();
+  }
+
+  function setEnhanceCost(value) {
+    if (value === "" || !Number.isFinite(Number(value))) return;
+    state.enhanceCost = Math.round(Number(value));
+    render();
+  }
+
+  function setEnhanceBaseRate(value) {
+    if (value === "" || !Number.isFinite(Number(value))) return;
+    state.enhanceBaseRate = clamp(Math.round(Number(value)), 1, 100);
+    render();
+  }
+
+  function setEnhancePity(value) {
+    if (value === "" || !Number.isFinite(Number(value))) return;
+    state.enhancePity = Math.round(Number(value));
+    render();
+  }
+
+  function setEnhanceProtection(checked) {
+    state.enhanceProtection = checked;
     render();
   }
 
@@ -708,6 +933,13 @@
     }
     setTimeout(() => { copyButton.textContent = original; }, 1200);
   });
+
+  enhanceFromInput.addEventListener("input", () => setEnhanceFrom(enhanceFromInput.value));
+  enhanceToInput.addEventListener("input", () => setEnhanceTo(enhanceToInput.value));
+  enhanceCostInput.addEventListener("input", () => setEnhanceCost(enhanceCostInput.value));
+  enhanceBaseRateInput.addEventListener("input", () => setEnhanceBaseRate(enhanceBaseRateInput.value));
+  enhancePityInput.addEventListener("input", () => setEnhancePity(enhancePityInput.value));
+  enhanceProtectionCheckbox.addEventListener("change", (e) => setEnhanceProtection(e.target.checked));
 
   function initFromUrl() {
     const params = new URLSearchParams(window.location.search);

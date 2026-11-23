@@ -18,12 +18,13 @@ vm.runInContext(
     extract(/  function formatDamage\(value\) \{[\s\S]*?\n  \}/, "formatDamage"),
     extract(/  function calculate\(weapon, strength, quality\) \{[\s\S]*?\n  \}/, "calculate"),
     extract(/  function calculateQualityRange\(weapon\) \{[\s\S]*?\n  \}/, "calculateQualityRange"),
-    "globalThis.calculator = { WEAPONS, formatDamage, calculate, calculateQualityRange };"
+    extract(/  function calculateEnhanceCost\(fromLevel, toLevel, costPerAttempt, baseRatePercent, pity, useProtection\) \{[\s\S]*?\n  \}/, "calculateEnhanceCost"),
+    "globalThis.calculator = { WEAPONS, formatDamage, calculate, calculateQualityRange, calculateEnhanceCost };"
   ].join("\n"),
   context
 );
 
-const { WEAPONS, formatDamage, calculate, calculateQualityRange } = context.calculator;
+const { WEAPONS, formatDamage, calculate, calculateQualityRange, calculateEnhanceCost } = context.calculator;
 const weapon = id => WEAPONS.find(item => item.id === id);
 
 function assertClose(actual, expected, tolerance = 0.01) {
@@ -49,6 +50,36 @@ test("품질 범위는 무기별 0강 1품 최소와 100품 최대로 고정된�
   const light = calculateQualityRange(weapon("심빛"));
   assertClose(light.min, 254.6);
   assertClose(light.max, 760);
+});
+
+test("강화 비용 예상치는 기하분포 기반으로 계산된다", () => {
+  // 0강→1강, 성공률 90%, 비용 1000G, 천장 없음(매우 큰 값)
+  const result = calculateEnhanceCost(0, 1, 1000, 90, 10000, false);
+  assertClose(result.expectedAttempts, 1 / 0.9);
+  assertClose(result.expectedCost, (1 / 0.9) * 1000);
+  assert.equal(result.maxAttempts, 10000);
+  assert.equal(result.maxCost, 10000 * 1000);
+});
+
+test("강화 비용은 레벨이 올라갈수록 성공률이 낮아져 비용이 증가한다", () => {
+  const low = calculateEnhanceCost(0, 1, 1000, 90, 10000, false);
+  const high = calculateEnhanceCost(60, 61, 1000, 90, 10000, false);
+  // 60강 성공률: 90% - 14%*60 = 90 - 840 = 음수 → 1%로 하한
+  assert.ok(high.expectedAttempts > low.expectedAttempts);
+  assert.ok(high.expectedCost > low.expectedCost);
+});
+
+test("천장(피티)이 적용되면 최대 시도 횟수가 제한된다", () => {
+  const result = calculateEnhanceCost(0, 1, 1000, 50, 10, false);
+  assert.equal(result.maxAttempts, 10);
+  assert.equal(result.maxCost, 10000);
+});
+
+test("다중 강화를 시도할 때 비용이 누적된다", () => {
+  const single = calculateEnhanceCost(0, 1, 1000, 90, 10000, false);
+  const multi = calculateEnhanceCost(0, 3, 1000, 90, 10000, false);
+  assert.ok(multi.expectedAttempts > single.expectedAttempts);
+  assert.ok(multi.expectedCost > single.expectedCost);
 });
 
 test("망집 0강 4품은 게임 표시값과 일치한다", () => {
