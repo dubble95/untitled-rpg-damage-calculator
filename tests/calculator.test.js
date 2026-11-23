@@ -17,12 +17,13 @@ vm.runInContext(
     extract(/  const WEAPONS = \[[\s\S]*?\n  \];/, "WEAPONS"),
     extract(/  function formatDamage\(value\) \{[\s\S]*?\n  \}/, "formatDamage"),
     extract(/  function calculate\(weapon, strength, quality\) \{[\s\S]*?\n  \}/, "calculate"),
-    "globalThis.calculator = { WEAPONS, formatDamage, calculate };"
+    extract(/  function calculateQualityRange\(weapon\) \{[\s\S]*?\n  \}/, "calculateQualityRange"),
+    "globalThis.calculator = { WEAPONS, formatDamage, calculate, calculateQualityRange };"
   ].join("\n"),
   context
 );
 
-const { WEAPONS, formatDamage, calculate } = context.calculator;
+const { WEAPONS, formatDamage, calculate, calculateQualityRange } = context.calculator;
 const weapon = id => WEAPONS.find(item => item.id === id);
 
 function assertClose(actual, expected, tolerance = 0.01) {
@@ -38,6 +39,16 @@ test("0강 100품은 모든 무기의 기본 공격력과 동일하다", () => {
     assert.equal(result.min, item.min);
     assert.equal(result.max, item.max);
   }
+});
+
+test("품질 범위는 무기별 0강 1품 최소와 100품 최대로 고정된다", () => {
+  const executioner = calculateQualityRange(weapon("망집"));
+  assertClose(executioner.min, 371.85);
+  assertClose(executioner.max, 1110);
+
+  const light = calculateQualityRange(weapon("심빛"));
+  assertClose(light.min, 254.6);
+  assertClose(light.max, 760);
 });
 
 test("망집 0강 4품은 게임 표시값과 일치한다", () => {

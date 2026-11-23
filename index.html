@@ -468,7 +468,7 @@
       <span id="resultDamageMax">630</span>
       <span class="unit">데미지</span>
     </div>
-    <div class="damage-range" id="resultRange">최소 315 ~ 최대 630</div>
+    <div class="damage-range" id="resultRange">0강 기준 1품 최소 211.1 ~ 100품 최대 630</div>
     <div class="hint" id="resultHint">0강 · 100품 · 위키 기본 공격력과 동일</div>
     <button type="button" class="copy" id="copyButton" aria-label="결과 복사">결과 복사</button>
   </div>
@@ -567,6 +567,13 @@
     return { min, max };
   }
 
+  function calculateQualityRange(weapon) {
+    return {
+      min: calculate(weapon, 0, 1).min,
+      max: calculate(weapon, 0, 100).max
+    };
+  }
+
   function syncUrl() {
     const params = new URLSearchParams(window.location.search);
     params.set("weapon", state.weaponId);
@@ -578,6 +585,7 @@
   function render() {
     const weapon = WEAPONS.find(w => w.id === state.weaponId) || WEAPONS[0];
     const { min, max } = calculate(weapon, state.strength, state.quality);
+    const qualityRange = calculateQualityRange(weapon);
     const nextMax = calculate(weapon, state.strength + 1, state.quality).max;
     const nextQualityMax = calculate(weapon, state.strength, Math.min(state.quality + 1, 100)).max;
 
@@ -597,7 +605,7 @@
     resultName.textContent = weapon.name;
     resultAlias.textContent = weapon.alias;
     resultDamageMax.textContent = formatDamage(max);
-    resultRange.textContent = `최소 ${formatDamage(min)} ~ 최대 ${formatDamage(max)}`;
+    resultRange.textContent = `0강 기준 1품 최소 ${formatDamage(qualityRange.min)} ~ 100품 최대 ${formatDamage(qualityRange.max)}`;
 
     const enhancePercent = ((Math.pow(1.07, 1) - 1) * 100).toFixed(1);
     const qualityPercent = ((1 / (200 + state.quality)) * 100).toFixed(2);
