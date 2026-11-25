@@ -164,7 +164,7 @@
   }
 
   .enhance-cost {
-    display: none;
+    display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 14px;
     background: var(--panel);
@@ -540,26 +540,20 @@
 
   <div class="enhance-cost">
     <h3>예상 강화 비용</h3>
-    <p class="note">공식 비용·확률표가 공개되지 않아 추정치입니다. 게임과 맞춰 입력값을 조정하세요.</p>
+    <p class="note">추정식: 비용 = 기본 비용 × 1.1^강화, 성공률 = 100% × 0.86^강화, 천장 = round(250 ÷ 성공률[%]).</p>
     <div class="field">
-      <label>현재 강화 <span class="value" id="enhanceFromLabel">0</span>강</label>
-      <input type="number" id="enhanceFromInput" min="0" max="69" value="0">
+      <label>추가 강화 <span class="value" id="enhanceToLabel">+1</span>강</label>
+      <input type="number" id="enhanceToInput" min="0" max="70" value="1">
+      <small class="value" id="enhanceTargetSummary">현재 0강 → 목표 1강</small>
     </div>
     <div class="field">
-      <label>목표 강화 <span class="value" id="enhanceToLabel">10</span>강</label>
-      <input type="number" id="enhanceToInput" min="1" max="70" value="10">
+      <label>현재 강화 비용 <span class="value" id="enhanceCurrentAttemptCost">14K</span>G</label>
     </div>
     <div class="field">
-      <label>시도당 골드 비용 <span class="value" id="enhanceCostLabel">1000</span>G</label>
-      <input type="number" id="enhanceCostInput" min="0" value="1000">
+      <label>현재 성공 확률 <span class="value" id="enhanceBaseRateLabel">100%</span></label>
     </div>
     <div class="field">
-      <label>기본 성공 확률 <span class="value" id="enhanceBaseRateLabel">90</span>%</label>
-      <input type="number" id="enhanceBaseRateInput" min="1" max="100" value="90">
-    </div>
-    <div class="field">
-      <label>천장(피티) 시도 횟수 <span class="value" id="enhancePityLabel">50</span>회</label>
-      <input type="number" id="enhancePityInput" min="1" value="50">
+      <label>현재 강화 천장 <span class="value" id="enhancePityLabel">3</span>회</label>
     </div>
     <div class="field">
       <label style="justify-content: flex-start; gap: 8px;">
@@ -622,14 +616,14 @@
 <script>
 (function () {
   const WEAPONS = [
-    { id: "고낚", name: "고대 낚싯대", alias: "고낚", min: 315, max: 630 },
-    { id: "심파", name: "심연의 파동", alias: "심파", min: 345, max: 690 },
-    { id: "심빛", name: "심연 속의 빛", alias: "심빛", min: 380, max: 760 },
-    { id: "심끝", name: "심연의 끝", alias: "심끝", min: 440, max: 880 },
-    { id: "망집", name: "망각의 집행자", alias: "망집", min: 555, max: 1110 },
-    { id: "리프트I", name: "오빌리언 리프트 I", alias: "리프트I", min: 100, max: 200 },
-    { id: "리프트II", name: "오빌리언 리프트 II", alias: "리프트II", min: 200, max: 400 },
-    { id: "리프트III", name: "오빌리언 리프트 III", alias: "리프트III", min: 300, max: 600 }
+    { id: "고낚", name: "고대 낚싯대", alias: "고낚", min: 315, max: 630, enhanceBaseCost: 13995 },
+    { id: "심파", name: "심연의 파동", alias: "심파", min: 345, max: 690, enhanceBaseCost: 15000 },
+    { id: "심빛", name: "심연 속의 빛", alias: "심빛", min: 380, max: 760, enhanceBaseCost: 16000 },
+    { id: "심끝", name: "심연의 끝", alias: "심끝", min: 440, max: 880, enhanceBaseCost: 18000 },
+    { id: "망집", name: "망각의 집행자", alias: "망집", min: 555, max: 1110, enhanceBaseCost: 25000 },
+    { id: "리프트I", name: "오빌리언 리프트 I", alias: "리프트I", min: 100, max: 200, enhanceBaseCost: 14995 },
+    { id: "리프트II", name: "오빌리언 리프트 II", alias: "리프트II", min: 200, max: 400, enhanceBaseCost: 15000 },
+    { id: "리프트III", name: "오빌리언 리프트 III", alias: "리프트III", min: 300, max: 600, enhanceBaseCost: 14217 }
   ];
 
   const tabs = document.querySelectorAll(".weapon-tab");
@@ -648,15 +642,11 @@
   const compareBody = document.getElementById("compareBody");
   const copyButton = document.getElementById("copyButton");
   const announce = document.getElementById("announce");
-  const enhanceFromInput = document.getElementById("enhanceFromInput");
-  const enhanceFromLabel = document.getElementById("enhanceFromLabel");
   const enhanceToInput = document.getElementById("enhanceToInput");
   const enhanceToLabel = document.getElementById("enhanceToLabel");
-  const enhanceCostInput = document.getElementById("enhanceCostInput");
-  const enhanceCostLabel = document.getElementById("enhanceCostLabel");
-  const enhanceBaseRateInput = document.getElementById("enhanceBaseRateInput");
+  const enhanceTargetSummary = document.getElementById("enhanceTargetSummary");
+  const enhanceCurrentAttemptCost = document.getElementById("enhanceCurrentAttemptCost");
   const enhanceBaseRateLabel = document.getElementById("enhanceBaseRateLabel");
-  const enhancePityInput = document.getElementById("enhancePityInput");
   const enhancePityLabel = document.getElementById("enhancePityLabel");
   const enhanceProtectionCheckbox = document.getElementById("enhanceProtectionCheckbox");
   const enhanceExpectedAttempts = document.getElementById("enhanceExpectedAttempts");
@@ -668,16 +658,31 @@
     weaponId: "고낚",
     strength: 0,
     quality: 100,
-    enhanceFrom: 0,
-    enhanceTo: 10,
-    enhanceCost: 1000,
-    enhanceBaseRate: 90,
-    enhancePity: 50,
+    enhanceDelta: 1,
     enhanceProtection: false
   };
 
   function clamp(value, min, max) {
     return Math.min(Math.max(value, min), max);
+  }
+
+  function getEnhanceTargetLevel(currentLevel, additionalLevels) {
+    return Math.min(70, currentLevel + additionalLevels);
+  }
+
+  function calculateEnhanceSuccessRate(level) {
+    return 100 * Math.pow(0.86, level);
+  }
+
+  function calculateEnhancePity(successRatePercent) {
+    return Math.max(1, Math.round(250 / successRatePercent));
+  }
+
+  function formatEnhanceSuccessRate(successRatePercent) {
+    const decimalPlaces = successRatePercent >= 10 ? 2 : successRatePercent >= 1 ? 1 : 3;
+    const precision = Math.pow(10, decimalPlaces);
+    const truncated = Math.floor(successRatePercent * precision) / precision;
+    return `${truncated.toFixed(decimalPlaces).replace(/\.?0+$/, "")}%`;
   }
 
   function formatDamage(value) {
@@ -709,20 +714,25 @@
     };
   }
 
-  function calculateEnhanceCost(fromLevel, toLevel, costPerAttempt, baseRatePercent, pity, useProtection) {
+  function calculateEnhanceAttemptCost(baseCost, level) {
+    return baseCost * Math.pow(1.1, level);
+  }
+
+  function calculateEnhanceCost(fromLevel, toLevel, baseCost) {
     let totalExpectedAttempts = 0;
     let totalExpectedCost = 0;
     let totalMaxAttempts = 0;
     let totalMaxCost = 0;
 
     for (let level = fromLevel; level < toLevel; level++) {
-      const p = Math.max(0.01, baseRatePercent / 100 - 0.14 * level);
+      const successRatePercent = calculateEnhanceSuccessRate(level);
+      const p = successRatePercent / 100;
       const q = 1 - p;
+      const pity = calculateEnhancePity(successRatePercent);
 
-      // Expected attempts with pity ceiling: sum_{k=1}^{pity-1} k * q^(k-1) * p + pity * q^(pity-1)
-      // Simplified closed form: (1 - q^pity) / p
       const expectedAttempts = (1 - Math.pow(q, pity)) / p;
       const maxAttempts = pity;
+      const costPerAttempt = calculateEnhanceAttemptCost(baseCost, level);
 
       totalExpectedAttempts += expectedAttempts;
       totalExpectedCost += expectedAttempts * costPerAttempt;
@@ -766,16 +776,17 @@
     qualitySlider.value = state.quality;
     qualityLabel.textContent = state.quality;
 
-    enhanceFromInput.value = state.enhanceFrom;
-    enhanceFromLabel.textContent = state.enhanceFrom;
-    enhanceToInput.value = state.enhanceTo;
-    enhanceToLabel.textContent = state.enhanceTo;
-    enhanceCostInput.value = state.enhanceCost;
-    enhanceCostLabel.textContent = state.enhanceCost;
-    enhanceBaseRateInput.value = state.enhanceBaseRate;
-    enhanceBaseRateLabel.textContent = state.enhanceBaseRate;
-    enhancePityInput.value = state.enhancePity;
-    enhancePityLabel.textContent = state.enhancePity;
+    state.enhanceDelta = clamp(state.enhanceDelta, 0, 70 - state.strength);
+    const enhanceTargetLevel = getEnhanceTargetLevel(state.strength, state.enhanceDelta);
+    enhanceToInput.max = 70 - state.strength;
+    enhanceToInput.value = state.enhanceDelta;
+    enhanceToLabel.textContent = `+${state.enhanceDelta}`;
+    enhanceTargetSummary.textContent = `현재 ${state.strength}강 → 목표 ${enhanceTargetLevel}강`;
+    enhanceCurrentAttemptCost.textContent =
+      formatDamage(calculateEnhanceAttemptCost(weapon.enhanceBaseCost, state.strength));
+    const currentSuccessRate = calculateEnhanceSuccessRate(state.strength);
+    enhanceBaseRateLabel.textContent = formatEnhanceSuccessRate(currentSuccessRate);
+    enhancePityLabel.textContent = calculateEnhancePity(currentSuccessRate);
     enhanceProtectionCheckbox.checked = state.enhanceProtection;
 
     resultName.textContent = weapon.name;
@@ -819,12 +830,9 @@
       `${weapon.name} ${state.strength}강 ${state.quality}품, 최대 데미지 ${formatDamage(max)}, 최소 ${formatDamage(min)}`;
 
     const { expectedAttempts, expectedCost, maxAttempts, maxCost } = calculateEnhanceCost(
-      state.enhanceFrom,
-      state.enhanceTo,
-      state.enhanceCost,
-      state.enhanceBaseRate,
-      state.enhancePity,
-      state.enhanceProtection
+      state.strength,
+      enhanceTargetLevel,
+      weapon.enhanceBaseCost
     );
 
     enhanceExpectedAttempts.textContent = formatDamage(expectedAttempts);
@@ -853,33 +861,9 @@
     render();
   }
 
-  function setEnhanceFrom(value) {
-    if (value === "" || !Number.isFinite(Number(value))) return;
-    state.enhanceFrom = clamp(Math.round(Number(value)), 0, 69);
-    render();
-  }
-
   function setEnhanceTo(value) {
     if (value === "" || !Number.isFinite(Number(value))) return;
-    state.enhanceTo = clamp(Math.round(Number(value)), 1, 70);
-    render();
-  }
-
-  function setEnhanceCost(value) {
-    if (value === "" || !Number.isFinite(Number(value))) return;
-    state.enhanceCost = Math.round(Number(value));
-    render();
-  }
-
-  function setEnhanceBaseRate(value) {
-    if (value === "" || !Number.isFinite(Number(value))) return;
-    state.enhanceBaseRate = clamp(Math.round(Number(value)), 1, 100);
-    render();
-  }
-
-  function setEnhancePity(value) {
-    if (value === "" || !Number.isFinite(Number(value))) return;
-    state.enhancePity = Math.round(Number(value));
+    state.enhanceDelta = clamp(Math.round(Number(value)), 0, 70 - state.strength);
     render();
   }
 
@@ -934,11 +918,7 @@
     setTimeout(() => { copyButton.textContent = original; }, 1200);
   });
 
-  enhanceFromInput.addEventListener("input", () => setEnhanceFrom(enhanceFromInput.value));
   enhanceToInput.addEventListener("input", () => setEnhanceTo(enhanceToInput.value));
-  enhanceCostInput.addEventListener("input", () => setEnhanceCost(enhanceCostInput.value));
-  enhanceBaseRateInput.addEventListener("input", () => setEnhanceBaseRate(enhanceBaseRateInput.value));
-  enhancePityInput.addEventListener("input", () => setEnhancePity(enhancePityInput.value));
   enhanceProtectionCheckbox.addEventListener("change", (e) => setEnhanceProtection(e.target.checked));
 
   function initFromUrl() {

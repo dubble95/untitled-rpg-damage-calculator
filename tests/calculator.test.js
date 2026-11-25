@@ -18,13 +18,22 @@ vm.runInContext(
     extract(/  function formatDamage\(value\) \{[\s\S]*?\n  \}/, "formatDamage"),
     extract(/  function calculate\(weapon, strength, quality\) \{[\s\S]*?\n  \}/, "calculate"),
     extract(/  function calculateQualityRange\(weapon\) \{[\s\S]*?\n  \}/, "calculateQualityRange"),
-    extract(/  function calculateEnhanceCost\(fromLevel, toLevel, costPerAttempt, baseRatePercent, pity, useProtection\) \{[\s\S]*?\n  \}/, "calculateEnhanceCost"),
-    "globalThis.calculator = { WEAPONS, formatDamage, calculate, calculateQualityRange, calculateEnhanceCost };"
+    extract(/  function getEnhanceTargetLevel\(currentLevel, additionalLevels\) \{[\s\S]*?\n  \}/, "getEnhanceTargetLevel"),
+    extract(/  function calculateEnhanceSuccessRate\(level\) \{[\s\S]*?\n  \}/, "calculateEnhanceSuccessRate"),
+    extract(/  function calculateEnhancePity\(successRatePercent\) \{[\s\S]*?\n  \}/, "calculateEnhancePity"),
+    extract(/  function formatEnhanceSuccessRate\(successRatePercent\) \{[\s\S]*?\n  \}/, "formatEnhanceSuccessRate"),
+    extract(/  function calculateEnhanceAttemptCost\(baseCost, level\) \{[\s\S]*?\n  \}/, "calculateEnhanceAttemptCost"),
+    extract(/  function calculateEnhanceCost\(fromLevel, toLevel, baseCost\) \{[\s\S]*?\n  \}/, "calculateEnhanceCost"),
+    "globalThis.calculator = { WEAPONS, formatDamage, calculate, calculateQualityRange, getEnhanceTargetLevel, calculateEnhanceSuccessRate, calculateEnhancePity, formatEnhanceSuccessRate, calculateEnhanceAttemptCost, calculateEnhanceCost };"
   ].join("\n"),
   context
 );
 
-const { WEAPONS, formatDamage, calculate, calculateQualityRange, calculateEnhanceCost } = context.calculator;
+const {
+  WEAPONS, formatDamage, calculate, calculateQualityRange, getEnhanceTargetLevel,
+  calculateEnhanceSuccessRate, calculateEnhancePity, formatEnhanceSuccessRate,
+  calculateEnhanceAttemptCost, calculateEnhanceCost
+} = context.calculator;
 const weapon = id => WEAPONS.find(item => item.id === id);
 
 function assertClose(actual, expected, tolerance = 0.01) {
@@ -52,32 +61,77 @@ test("품질 범위는 무기별 0강 1품 최소와 100품 최대로 고정된�
   assertClose(light.max, 760);
 });
 
-test("강화 비용 예상치는 기하분포 기반으로 계산된다", () => {
-  // 0강→1강, 성공률 90%, 비용 1000G, 천장 없음(매우 큰 값)
-  const result = calculateEnhanceCost(0, 1, 1000, 90, 10000, false);
-  assertClose(result.expectedAttempts, 1 / 0.9);
-  assertClose(result.expectedCost, (1 / 0.9) * 1000);
-  assert.equal(result.maxAttempts, 10000);
-  assert.equal(result.maxCost, 10000 * 1000);
+test("성공 확률과 천장은 캡처값에 맞는 단계별 추정식으로 계산된다", () => {
+  const observations = [
+    { level: 0, rate: "100%", pity: 3 },
+    { level: 5, rate: "47.04%", pity: 5 },
+    { level: 25, rate: "2.3%", pity: 109 },
+    { level: 34, rate: "0.592%", pity: 422 },
+    { level: 45, rate: "0.112%", pity: 2216 }
+  ];
+
+  for (const { level, rate, pity } of observations) {
+    const successRate = calculateEnhanceSuccessRate(level);
+    assert.equal(formatEnhanceSuccessRate(successRate), rate);
+    assert.equal(calculateEnhancePity(successRate), pity);
+  }
+});
+
+test("예상 비용은 단계별 성공 확률과 천장을 반영한다", () => {
+  const firstLevel = calculateEnhanceCost(0, 1, 1000);
+  assertClose(firstLevel.expectedAttempts, 1);
+  assertClose(firstLevel.expectedCost, 1000);
+  assert.equal(firstLevel.maxAttempts, 3);
+  assert.equal(firstLevel.maxCost, 3000);
+
+  const level25 = calculateEnhanceCost(25, 26, 1000);
+  assert.equal(level25.maxAttempts, 109);
+  assertClose(level25.maxCost, 109 * 1000 * Math.pow(1.1, 25));
+});
+
+test("강화 1회 비용은 0강 기본 비용에 강화 단계별 1.1 배율을 적용한다", () => {
+  const executionerCost = calculateEnhanceAttemptCost(weapon("망집").enhanceBaseCost, 0);
+  const fishingRodCost = calculateEnhanceAttemptCost(weapon("고낚").enhanceBaseCost, 25);
+  const riftOneCost = calculateEnhanceAttemptCost(weapon("리프트I").enhanceBaseCost, 5);
+  const abyssEndCost = calculateEnhanceAttemptCost(weapon("심끝").enhanceBaseCost, 45);
+  const riftThreeCost = calculateEnhanceAttemptCost(weapon("리프트III").enhanceBaseCost, 34);
+
+  assert.equal(executionerCost, 25000);
+  assertClose(fishingRodCost, 151632, 1);
+  assert.equal(formatDamage(fishingRodCost), "151.63k");
+  assertClose(riftOneCost, 24150, 1);
+  assert.equal(formatDamage(riftOneCost), "24.15k");
+  assert.equal(formatDamage(abyssEndCost), "1.31m");
+  assertClose(riftThreeCost, 363210, 2);
+  assert.equal(formatDamage(riftThreeCost), "363.21k");
+  assert.match(html, /현재 강화 비용 <span class="value" id="enhanceCurrentAttemptCost">/);
+  assert.doesNotMatch(html, /id="enhanceCostInput"/);
+});
+
+test("강화 비용 목표는 현재 강화에서 추가 단계만큼 계산하고 70강을 넘지 않는다", () => {
+  assert.equal(getEnhanceTargetLevel(12, 1), 13);
+  assert.equal(getEnhanceTargetLevel(65, 5), 70);
+  assert.equal(getEnhanceTargetLevel(70, 1), 70);
+  assert.doesNotMatch(html, /id="enhanceFromInput"/);
+  assert.match(html, /id="enhanceToInput" min="0" max="70" value="1"/);
 });
 
 test("강화 비용은 레벨이 올라갈수록 성공률이 낮아져 비용이 증가한다", () => {
-  const low = calculateEnhanceCost(0, 1, 1000, 90, 10000, false);
-  const high = calculateEnhanceCost(60, 61, 1000, 90, 10000, false);
-  // 60강 성공률: 90% - 14%*60 = 90 - 840 = 음수 → 1%로 하한
+  const low = calculateEnhanceCost(0, 1, 1000);
+  const high = calculateEnhanceCost(60, 61, 1000);
   assert.ok(high.expectedAttempts > low.expectedAttempts);
   assert.ok(high.expectedCost > low.expectedCost);
 });
 
 test("천장(피티)이 적용되면 최대 시도 횟수가 제한된다", () => {
-  const result = calculateEnhanceCost(0, 1, 1000, 50, 10, false);
-  assert.equal(result.maxAttempts, 10);
-  assert.equal(result.maxCost, 10000);
+  const result = calculateEnhanceCost(34, 35, 1000);
+  assert.equal(result.maxAttempts, 422);
+  assertClose(result.maxCost, 422 * 1000 * Math.pow(1.1, 34));
 });
 
 test("다중 강화를 시도할 때 비용이 누적된다", () => {
-  const single = calculateEnhanceCost(0, 1, 1000, 90, 10000, false);
-  const multi = calculateEnhanceCost(0, 3, 1000, 90, 10000, false);
+  const single = calculateEnhanceCost(0, 1, 1000);
+  const multi = calculateEnhanceCost(0, 3, 1000);
   assert.ok(multi.expectedAttempts > single.expectedAttempts);
   assert.ok(multi.expectedCost > single.expectedCost);
 });
