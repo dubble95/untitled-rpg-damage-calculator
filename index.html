@@ -207,11 +207,6 @@
     font-variant-numeric: tabular-nums;
   }
 
-  .enhance-cost .field label input[type="checkbox"] {
-    margin: 0;
-    width: auto;
-  }
-
   .enhance-cost .enhance-result {
     grid-column: 1 / -1;
     margin-top: 10px;
@@ -555,12 +550,6 @@
     <div class="field">
       <label>현재 강화 천장 <span class="value" id="enhancePityLabel">3</span>회</label>
     </div>
-    <div class="field">
-      <label style="justify-content: flex-start; gap: 8px;">
-        <input type="checkbox" id="enhanceProtectionCheckbox">
-        강화하락 방지권 사용 (실패 시 강화 수치 유지)
-      </label>
-    </div>
     <div class="enhance-result">
       <div><strong>예상 시도 횟수:</strong> <span id="enhanceExpectedAttempts" class="cost">0</span>회</div>
       <div><strong>예상 골드 비용:</strong> <span id="enhanceExpectedCost" class="cost">0</span>G</div>
@@ -648,7 +637,6 @@
   const enhanceCurrentAttemptCost = document.getElementById("enhanceCurrentAttemptCost");
   const enhanceBaseRateLabel = document.getElementById("enhanceBaseRateLabel");
   const enhancePityLabel = document.getElementById("enhancePityLabel");
-  const enhanceProtectionCheckbox = document.getElementById("enhanceProtectionCheckbox");
   const enhanceExpectedAttempts = document.getElementById("enhanceExpectedAttempts");
   const enhanceExpectedCost = document.getElementById("enhanceExpectedCost");
   const enhanceMaxAttempts = document.getElementById("enhanceMaxAttempts");
@@ -658,8 +646,7 @@
     weaponId: "고낚",
     strength: 0,
     quality: 100,
-    enhanceDelta: 1,
-    enhanceProtection: false
+    enhanceDelta: 1
   };
 
   function clamp(value, min, max) {
@@ -787,8 +774,6 @@
     const currentSuccessRate = calculateEnhanceSuccessRate(state.strength);
     enhanceBaseRateLabel.textContent = formatEnhanceSuccessRate(currentSuccessRate);
     enhancePityLabel.textContent = calculateEnhancePity(currentSuccessRate);
-    enhanceProtectionCheckbox.checked = state.enhanceProtection;
-
     resultName.textContent = weapon.name;
     resultAlias.textContent = weapon.alias;
     resultDamageMax.textContent = formatDamage(max);
@@ -867,11 +852,6 @@
     render();
   }
 
-  function setEnhanceProtection(checked) {
-    state.enhanceProtection = checked;
-    render();
-  }
-
   tabs.forEach(tab => {
     tab.addEventListener("click", () => setWeapon(tab.dataset.weapon));
     tab.addEventListener("keydown", event => {
@@ -919,8 +899,6 @@
   });
 
   enhanceToInput.addEventListener("input", () => setEnhanceTo(enhanceToInput.value));
-  enhanceProtectionCheckbox.addEventListener("change", (e) => setEnhanceProtection(e.target.checked));
-
   function initFromUrl() {
     const params = new URLSearchParams(window.location.search);
     const weapon = params.get("weapon");

@@ -106,6 +106,7 @@ test("강화 1회 비용은 0강 기본 비용에 강화 단계별 1.1 배율을
   assert.equal(formatDamage(riftThreeCost), "363.21k");
   assert.match(html, /현재 강화 비용 <span class="value" id="enhanceCurrentAttemptCost">/);
   assert.doesNotMatch(html, /id="enhanceCostInput"/);
+  assert.doesNotMatch(html, /enhanceProtectionCheckbox|강화하락 방지권 사용/);
 });
 
 test("강화 비용 목표는 현재 강화에서 추가 단계만큼 계산하고 70강을 넘지 않는다", () => {
