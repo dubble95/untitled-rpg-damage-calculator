@@ -524,11 +524,11 @@
     <div class="field">
       <label>
         품질 <span class="value" id="qualityLabel">100</span>품
-        <small class="note">게임 내 표시값은 정수 반올림일 수 있음</small>
+        <small class="note">정수 단위</small>
       </label>
       <div class="input-row">
-        <input type="number" id="qualityInput" min="1" max="100" step="0.01" value="100">
-        <input type="range" id="qualitySlider" min="1" max="100" step="0.01" value="100">
+        <input type="number" id="qualityInput" min="1" max="100" step="1" value="100">
+        <input type="range" id="qualitySlider" min="1" max="100" step="1" value="100">
       </div>
     </div>
   </div>
@@ -596,7 +596,7 @@
   <div class="error-note">
     <strong>오차 참고:</strong> 공식 <i>P × (200 + Q) ÷ 300 × 1.07<sup>R</sup></i>은 게임 내 툴팁과 거의 일치합니다.<br>
     검증 결과: 망각의 집행자 +57 99품 → 계산 52.33k vs 게임 52.32k (오차 0.02%), +0 4품 → 계산 754.8 vs 게임 754.8 (오차 0%).<br>
-    기본 공격력 값이 게임 업데이트로 변경된 경우 계산 결과와 차이가 날 수 있습니다. 품질 입력란에 소수점을 직접 입력하면 더 정확하게 맞출 수 있습니다.
+    기본 공격력이나 게임 내 데미지 반올림에 따라 결과에 차이가 날 수 있습니다. 품질은 게임 기준에 맞춰 정수로 입력합니다.
   </div>
 </div>
 
@@ -651,6 +651,10 @@
 
   function clamp(value, min, max) {
     return Math.min(Math.max(value, min), max);
+  }
+
+  function normalizeQuality(value) {
+    return clamp(Math.round(value), 1, 100);
   }
 
   function getEnhanceTargetLevel(currentLevel, additionalLevels) {
@@ -841,7 +845,7 @@
 
   function setQuality(value) {
     if (value === "" || !Number.isFinite(Number(value))) return;
-    state.quality = clamp(Math.round(Number(value) * 100) / 100, 1, 100);
+    state.quality = normalizeQuality(Number(value));
     syncUrl();
     render();
   }
@@ -911,7 +915,13 @@
 
     if (params.has("q")) {
       const quality = Number(params.get("q"));
-      if (Number.isFinite(quality)) state.quality = clamp(Math.round(quality * 100) / 100, 1, 100);
+      if (Number.isFinite(quality)) {
+        state.quality = normalizeQuality(quality);
+        if (params.get("q") !== String(state.quality)) {
+          params.set("q", String(state.quality));
+          history.replaceState(null, "", "?" + params.toString());
+        }
+      }
     }
   }
 

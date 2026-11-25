@@ -15,6 +15,8 @@ const context = vm.createContext({});
 vm.runInContext(
   [
     extract(/  const WEAPONS = \[[\s\S]*?\n  \];/, "WEAPONS"),
+    extract(/  function clamp\(value, min, max\) \{[\s\S]*?\n  \}/, "clamp"),
+    extract(/  function normalizeQuality\(value\) \{[\s\S]*?\n  \}/, "normalizeQuality"),
     extract(/  function formatDamage\(value\) \{[\s\S]*?\n  \}/, "formatDamage"),
     extract(/  function calculate\(weapon, strength, quality\) \{[\s\S]*?\n  \}/, "calculate"),
     extract(/  function calculateQualityRange\(weapon\) \{[\s\S]*?\n  \}/, "calculateQualityRange"),
@@ -24,13 +26,13 @@ vm.runInContext(
     extract(/  function formatEnhanceSuccessRate\(successRatePercent\) \{[\s\S]*?\n  \}/, "formatEnhanceSuccessRate"),
     extract(/  function calculateEnhanceAttemptCost\(baseCost, level\) \{[\s\S]*?\n  \}/, "calculateEnhanceAttemptCost"),
     extract(/  function calculateEnhanceCost\(fromLevel, toLevel, baseCost\) \{[\s\S]*?\n  \}/, "calculateEnhanceCost"),
-    "globalThis.calculator = { WEAPONS, formatDamage, calculate, calculateQualityRange, getEnhanceTargetLevel, calculateEnhanceSuccessRate, calculateEnhancePity, formatEnhanceSuccessRate, calculateEnhanceAttemptCost, calculateEnhanceCost };"
+    "globalThis.calculator = { WEAPONS, normalizeQuality, formatDamage, calculate, calculateQualityRange, getEnhanceTargetLevel, calculateEnhanceSuccessRate, calculateEnhancePity, formatEnhanceSuccessRate, calculateEnhanceAttemptCost, calculateEnhanceCost };"
   ].join("\n"),
   context
 );
 
 const {
-  WEAPONS, formatDamage, calculate, calculateQualityRange, getEnhanceTargetLevel,
+  WEAPONS, normalizeQuality, formatDamage, calculate, calculateQualityRange, getEnhanceTargetLevel,
   calculateEnhanceSuccessRate, calculateEnhancePity, formatEnhanceSuccessRate,
   calculateEnhanceAttemptCost, calculateEnhanceCost
 } = context.calculator;
@@ -49,6 +51,16 @@ test("0강 100품은 모든 무기의 기본 공격력과 동일하다", () => {
     assert.equal(result.min, item.min);
     assert.equal(result.max, item.max);
   }
+});
+
+test("품질은 1~100 범위의 정수로 정규화된다", () => {
+  assert.equal(normalizeQuality(1.03), 1);
+  assert.equal(normalizeQuality(1.5), 2);
+  assert.equal(normalizeQuality(99.7), 100);
+  assert.equal(normalizeQuality(0), 1);
+  assert.equal(normalizeQuality(101), 100);
+  assert.match(html, /id="qualityInput" min="1" max="100" step="1"/);
+  assert.match(html, /id="qualitySlider" min="1" max="100" step="1"/);
 });
 
 test("품질 범위는 무기별 0강 1품 최소와 100품 최대로 고정된다", () => {
